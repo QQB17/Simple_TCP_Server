@@ -11,6 +11,21 @@
 
 #define PORT "24000"
 #define errorLog(x) std::cout << x << " failed with " << WSAGetLastError() << std::endl;
+#define successLog(x) std::cout << x << " success.\n"
+#define ASSERT(x) if(x) return 1;
+#define LogCall(x,y) ASSERT(validCheck(x,y))
+
+static bool validCheck(const int function, const char* message) {
+	if (function != 0) {
+		errorLog(message);
+		WSACleanup();
+		return 1;
+	}
+	else {
+		successLog(message);
+		return 0;
+	}
+}
 
 bool c_Finished = false;
 
@@ -64,11 +79,7 @@ int main(int argc, char** argv) {
 	int iResult;
 
 	// WSA tart up
-	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (iResult != 0) {
-		errorLog("WSA Start up");
-		return 1;
-	}
+	LogCall(WSAStartup(MAKEWORD(2, 2), &wsaData), "WSA Start up");
 
 	//Set address information
 	memset(&hints, 0, sizeof(hints));
@@ -77,13 +88,8 @@ int main(int argc, char** argv) {
 	hints.ai_protocol = IPPROTO_TCP;
 
 	// Get address information
-	iResult = getaddrinfo("localhost", PORT, &hints, &result);
-	if (iResult != 0) {
-		errorLog("Get address information");
-		WSACleanup();
-		return 1;
-	}
-
+	LogCall(getaddrinfo("localhost", PORT, &hints, &result), "Get Address Information");
+	
 	// Try to create a socket and connect to the IP address
 	std::cout << "Connecting to server...\n";
 	for (ptr = result; ptr != NULL; ptr = ptr->ai_next) {
@@ -100,6 +106,7 @@ int main(int argc, char** argv) {
 		if (iResult == SOCKET_ERROR) {
 			closesocket(ClientSocket);
 			ClientSocket = INVALID_SOCKET;
+			// if there is nothing more, exit program
 			if (ptr->ai_next == NULL) {
 				errorLog("Server connected");
 				WSACleanup();

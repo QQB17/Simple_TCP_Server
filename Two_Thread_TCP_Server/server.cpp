@@ -9,6 +9,21 @@
 
 #define PORT "24000"
 #define errorLog(x) std::cout << x << " failed with " << WSAGetLastError() << std::endl
+#define successLog(x) std::cout << x << " success.\n"
+#define ASSERT(x) if(x) return 1
+#define LogCall(x,y) ASSERT(validCheck(x,y))
+
+static bool validCheck(const int function, const char* message) {
+	if (function != 0) {
+		errorLog(message);
+		WSACleanup();
+		return 1;
+	}
+	else {
+		successLog(message);
+		return 0;
+	}
+}
 
 bool s_Finished = false;
 
@@ -61,14 +76,8 @@ int main() {
 	SOCKET ClientSocket = INVALID_SOCKET;
 	struct addrinfo* result = NULL, hints;
 
-	int iResult;
-	
 	// WSA Start up
-	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (iResult != 0) {
-		errorLog("WSA Start up");
-		return 1;
-	}
+	LogCall(WSAStartup(MAKEWORD(2, 2), &wsaData), "WSA Start Up");
 
 	// Set address information
 	memset(&hints, 0, sizeof(hints));
@@ -78,41 +87,27 @@ int main() {
 	hints.ai_flags = AI_PASSIVE;
 
 	//getaddrinfo
-	iResult = getaddrinfo(NULL, PORT, &hints, &result);
-	if (iResult != 0) {
-		errorLog("Get address information");
-		return 1;
-	}
+	LogCall(getaddrinfo(NULL, PORT, &hints, &result),"Get address information");
 
 	//creak socket
 	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-	if (ListenSocket == INVALID_SOCKET) {
-		errorLog("Listen socket creation");
-		WSACleanup();
-		return 1;
-	}
-
-	//bind address 
-	iResult = bind(ListenSocket, result->ai_addr, result->ai_addrlen);
-	if (iResult == SOCKET_ERROR) {
-		errorLog("Bind address");
-		closesocket(ListenSocket);
-		WSACleanup();
-		return 1;
-	}
-
-	freeaddrinfo(result);
-
-	//listen
-	iResult = listen(ListenSocket, SOMAXCONN);
-	if (iResult != 0) {
-		errorLog("Listen");
+	if (ListenSocket == SOCKET_ERROR) {
+		errorLog("Create Listen Socket");
 		WSACleanup();
 		return 1;
 	}
 	else {
-		std::cout << "Waiting for client connect...\n";
+		successLog("Create Listen Socket");
 	}
+
+	//bind address 
+	LogCall(bind(ListenSocket, result->ai_addr, result->ai_addrlen), "Bind address");
+	
+	freeaddrinfo(result);
+
+	//listen
+	LogCall(listen(ListenSocket, SOMAXCONN), "Listening");
+	std::cout << "Waiting for client connect...\n";
 
 	//accept client socket
 	ClientSocket = accept(ListenSocket, NULL, NULL);
